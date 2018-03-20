@@ -6,10 +6,8 @@ import java.math.BigDecimal;
 public class test {
     public static void main(String[] args) {
 //        new test().count();
-        int i=0;
-        if(++i==1){
-            System.out.println("ss");
-        }
+        String path = "/js/jquery.min.map";
+        System.out.println(path.matches("/js/.*"));
     }
 
     public void count(){

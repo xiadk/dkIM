@@ -1,6 +1,8 @@
 package route;
 
+import bean.Auth;
 import bean.User;
+import dao.UserDao;
 import exception.AppException;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerResponse;
@@ -16,6 +18,7 @@ public class UserRouter {
     public Router router;
     private Vertx vertx;
     private UserService userService;
+    private static UserDao userDao = UserDao.getUserDao();
     public UserRouter(Vertx vertx){
         this.vertx = vertx;
         this.router = Router.router(vertx);
@@ -25,6 +28,7 @@ public class UserRouter {
 
     public void init(){
         router.post("/register").handler(this::register);
+        router.get("/").handler(this::getUser);
     }
 
     public void register(RoutingContext context){
@@ -49,5 +53,16 @@ public class UserRouter {
                 }
             });
         }
+    }
+
+    public void getUser(RoutingContext context){
+        int uid = ((Auth) context.get("auth")).getUid();
+        userDao.getUserById(uid,res->{
+            if(res.failed()) {
+                context.fail(res.cause());
+            } else {
+                ResponseUtils.responseSuccess(context,res.result());
+            }
+        });
     }
 }

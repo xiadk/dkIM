@@ -21,9 +21,9 @@ public class Run {
     public static void main(String[] args) {
         vertx.deployVerticle(MainVerticle.class.getName(),res->{
             if(res.succeeded()){
-                logger.debug("启动成功");
+                System.out.println("启动成功");
             }else{
-                logger.debug("启动失败");
+                System.out.println("启动失败");
             }
         });
     }

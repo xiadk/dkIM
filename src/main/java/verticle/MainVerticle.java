@@ -1,5 +1,6 @@
 package verticle;
 
+import auth.AuthHandler;
 import connector.PGConnector;
 import connector.RedisConnector;
 import io.vertx.core.AbstractVerticle;
@@ -37,7 +38,7 @@ public class MainVerticle extends AbstractVerticle{
 
         //加载静态文件
         router.route("/*").handler(StaticHandler.create().setAllowRootFileSystemAccess(true).setWebRoot("D:/dkIMWeb/webroot").setIndexPage("login.html"));
-
+        router.route().handler(AuthHandler.create());
         //异常捕捉
         router.route().failureHandler(routingContext->{
             String resultMsg = routingContext.failure().getMessage();
@@ -45,6 +46,7 @@ public class MainVerticle extends AbstractVerticle{
             routingContext.response().end(resultMsg);
 
         });
+
 
         router.mountSubRouter("/", new LoginRouter(vertx).router);
 

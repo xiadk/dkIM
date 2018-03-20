@@ -70,4 +70,21 @@ public class UserDao {
         });
     }
 
+    public void getUserById(int id,Handler<AsyncResult<JsonObject>> handler){
+        Map<String,Object> map = new HashMap<>();
+        map.put("uid",id);
+
+        JsonArray jsonArray = new JsonArray();
+        jsonArray.add("uid").add("name").add("photo");
+        BaseDao.select("users",map,jsonArray,res->{
+            if(res.failed()){
+                handler.handle(Future.failedFuture(res.cause()));
+            } else if (res.result().getRows().size() == 0){
+                handler.handle(Future.failedFuture(new AppException(ResponseUtils.REQUEST_NOT_EXIST,"用户未注册")));
+            } else {
+                handler.handle(Future.succeededFuture(res.result().getRows().get(0)));
+            }
+        });
+    }
+
 }

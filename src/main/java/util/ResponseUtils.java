@@ -26,6 +26,7 @@ public class ResponseUtils {
     public final static String SERVER_FAIL = "0500"; // 服务器错误
     public final static String REQUEST_EXIST = "1501"; // 请求保存的数据已存在
     public final static String REQUEST_NOT_EXIST = "1502"; // 请求数据不存在
+    public final static String AUTH_ERROR = "0555"; // token 失效
     private final static String RETURN_CODE = "msgId";
     private static Logger logger = LoggerFactory.getLogger(ResponseUtils.class);
 
@@ -68,7 +69,7 @@ public class ResponseUtils {
         String uri = request.uri();
         String requestParams = request.params().toString().replace("\n", "\t");
         Auth auth = routingContext.get("auth");
-        System.out.println(responseContent);
+        System.out.println("OUT---url:"+uri+";method:"+method+";params:"+requestParams);
         logger.info("RESPONSE(uid:{} ip:{}): {} {} time:{} response: {}",
                 auth == null ? 0 : auth.getUid(), remoteAddress, method, uri, TimeUtils.chargeDateToString(new Date()), responseContent);
         routingContext.response().end(responseContent);
