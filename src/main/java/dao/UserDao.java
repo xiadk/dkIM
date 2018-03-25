@@ -87,4 +87,22 @@ public class UserDao {
         });
     }
 
+    public void getUserByPhoneOrName(String condition, Handler<AsyncResult<List<JsonObject>>> handler) {
+
+        String sql = "select uid,name,phone,photo from users where name like ? or phone=?";
+        JsonArray jsonArray = new JsonArray();
+        jsonArray.add("%"+condition+"%").add(condition);
+        BaseDao.queryWithParams(sql,jsonArray,res->{
+            if (res.failed()) {
+                handler.handle(Future.failedFuture(res.cause()));
+            } else if (res.result().getRows().size() == 0){
+                handler.handle(Future.failedFuture(new AppException(ResponseUtils.REQUEST_NOT_EXIST,"用户不存在")));
+            } else {
+                List<JsonObject> list = res.result().getRows();
+                handler.handle(Future.succeededFuture(list));
+            }
+        });
+
+    }
+
 }

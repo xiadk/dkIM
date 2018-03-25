@@ -10,6 +10,7 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CorsHandler;
 import io.vertx.ext.web.handler.StaticHandler;
+import route.FriendRouter;
 import route.UserRouter;
 import util.ConfigUtils;
 import route.LoginRouter;
@@ -52,6 +53,7 @@ public class MainVerticle extends AbstractVerticle{
 
         router.mountSubRouter("/user", new UserRouter(vertx).router);
 
+        router.mountSubRouter("/friend",new FriendRouter(vertx).router);
         httpServer.websocketHandler(WebSocketHandler.create());
         httpServer.requestHandler(router::accept).listen(8001);
 
