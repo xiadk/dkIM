@@ -18,6 +18,7 @@ public class WebSocketHandler implements Handler<ServerWebSocket> {
         serverWebSocketMap.put(clientID, serverWebSocket);
         serverWebSocket.frameHandler(MessageHandler.create(serverWebSocket,serverWebSocketMap));
         serverWebSocket.closeHandler(res -> {
+            System.out.println("退出:"+clientID);
             serverWebSocketMap.remove(clientID);
         });
     }
