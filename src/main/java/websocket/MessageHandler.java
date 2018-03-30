@@ -1,10 +1,11 @@
 package websocket;
 
 import bean.Message;
-import bean.Type;
-import bean.User;
 import connector.RedisOperator;
+import dao.UserDao;
 import exception.AppException;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.http.WebSocketFrame;
@@ -85,11 +86,18 @@ public class MessageHandler implements Handler<WebSocketFrame> {
                                 //目标用户在线
                                 String clientID = fidRes.result();
                                 ServerWebSocket fidSocket = serverWebSocketMap.get(clientID);
-                                String backMsg = formReturnMsg(message);
-                                fidSocket.writeFinalTextFrame(backMsg);
-                                JsonObject respMessage = new JsonObject();
-                                respMessage.put("msgId", "0200").put("body", "发送成功");
-                                serverWebSocket.writeFinalTextFrame(respMessage.encode());
+                                String backMsg = formReturnMsg(message, Integer.parseInt(uid), backMsgRes -> {
+                                    if (backMsgRes.failed()) {
+                                        serverWebSocket.writeFinalTextFrame(backMsgRes.cause().getMessage());
+                                    } else {
+                                        fidSocket.writeFinalTextFrame(backMsgRes.result());
+                                        JsonObject respMessage = new JsonObject();
+                                        respMessage.put("msgId", "0200").put("body", "发送成功");
+                                        serverWebSocket.writeFinalTextFrame(respMessage.encode());
+                                    }
+                                });
+
+
                             }
                         });
 
@@ -107,8 +115,8 @@ public class MessageHandler implements Handler<WebSocketFrame> {
         return new MessageHandler(serverWebSocket, serverWebSocketMap);
     }
 
-   //格式化返回信息
-    public String formReturnMsg(Message message) {
+    //格式化返回信息
+    public String formReturnMsg(Message message, int uid, Handler<AsyncResult<String>> handler) {
 
         switch (message.getType()) {
             case TEXT:
@@ -119,10 +127,28 @@ public class MessageHandler implements Handler<WebSocketFrame> {
                 break;
             case ADD_FRIEND:
 
+                sendAddFriend(message, uid, handler);
                 break;
             default:
                 break;
         }
         return "ss";
+    }
+
+
+    //添加好友请求发送给目标用户
+    public void sendAddFriend(Message message, int uid, Handler<AsyncResult<String>> handler) {
+
+        UserDao.getUserDao().getUserById(uid, userRes -> {
+            if (userRes.failed()) {
+                handler.handle(Future.failedFuture(new AppException(ResponseUtils.SERVER_FAIL, "服务器错误")));
+            } else {
+                JsonObject returnMsg = userRes.result();
+                returnMsg.put("ope", message.getOpe());
+                returnMsg.put("type", message.getType());
+                handler.handle(Future.succeededFuture(returnMsg.toString()));
+            }
+
+        });
     }
 }

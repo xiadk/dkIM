@@ -70,9 +70,9 @@ public class UserDao {
         });
     }
 
-    public void getUserById(int id,Handler<AsyncResult<JsonObject>> handler){
+    public void getUserById(int uid,Handler<AsyncResult<JsonObject>> handler){
         Map<String,Object> map = new HashMap<>();
-        map.put("uid",id);
+        map.put("uid",uid);
 
         JsonArray jsonArray = new JsonArray();
         jsonArray.add("uid").add("name").add("photo");
