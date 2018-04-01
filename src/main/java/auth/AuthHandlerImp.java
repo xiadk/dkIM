@@ -26,7 +26,7 @@ public class AuthHandlerImp implements AuthHandler {
     //不需要token验证
     static {
         jsonArray.add("/login");
-        jsonArray.add("/register");
+        jsonArray.add("/user/register");
         jsonArray.add(".*/css/.*");
         jsonArray.add(".*/js/.*");
         jsonArray.add(".*/audio/.*");
