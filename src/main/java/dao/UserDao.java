@@ -106,9 +106,9 @@ public class UserDao {
     }
 
     public void findFriends(int uid, Handler<AsyncResult<List<JsonObject>>> handler) {
-        String sql = "select fid,photo,alias from friends,users where friends.fid=users.uid and friends.uid=? ordery by create_time";
+        String sql = "select fid,name,photo,alias,address from friends,users where friends.fid=users.uid and friends.uid=? order by friends.create_time";
         JsonArray params = new JsonArray();
-        params.add("uid");
+        params.add(uid);
         BaseDao.queryWithParams(sql,params,res->{
             if(res.failed()) {
                 handler.handle(Future.failedFuture(res.cause()));

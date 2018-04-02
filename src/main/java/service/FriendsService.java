@@ -31,4 +31,15 @@ public class FriendsService {
         userDao.getUserByPhoneOrName(condition,handler);
     }
 
+
+    public void findFriends(int uid,Handler<AsyncResult<List<JsonObject>>> handler) {
+        userDao.findFriends(uid,res->{
+            if(res.failed()) {
+                handler.handle(Future.failedFuture(res.cause()));
+            } else {
+                handler.handle(Future.succeededFuture(res.result()));
+            }
+        });
+    }
+
 }

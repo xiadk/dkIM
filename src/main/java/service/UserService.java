@@ -39,15 +39,7 @@ public class UserService {
             if(res.failed()) {
                 handler.handle(Future.failedFuture(res.cause()));
             } else {
-                JsonObject jsonObject = res.result();
-                userDao.findFriends(uid,findRes->{
-                    if(findRes.failed()) {
-                        handler.handle(Future.failedFuture(res.cause()));
-                    } else {
-                        jsonObject.put("friends",findRes.result());
-                        handler.handle(Future.succeededFuture(jsonObject));
-                    }
-                });
+                handler.handle(Future.succeededFuture(res.result()));
             }
             });
     }

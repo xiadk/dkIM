@@ -69,7 +69,7 @@ public class ResponseUtils {
         String uri = request.uri();
         String requestParams = request.params().toString().replace("\n", "\t");
         Auth auth = routingContext.get("auth");
-        System.out.println("OUT---url:"+uri+";method:"+method+";params:"+requestParams);
+        System.out.println("OUT---url:"+uri+";method:"+method+";params:"+responseContent);
         logger.info("RESPONSE(uid:{} ip:{}): {} {} time:{} response: {}",
                 auth == null ? 0 : auth.getUid(), remoteAddress, method, uri, TimeUtils.chargeDateToString(new Date()), responseContent);
         routingContext.response().end(responseContent);

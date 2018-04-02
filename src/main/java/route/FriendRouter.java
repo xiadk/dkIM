@@ -24,6 +24,7 @@ public class FriendRouter {
          //添加好友
          router.post("/").handler(this::addFriend);
          router.get("/").handler(this::getFriend);
+         router.get("/findFriends").handler(this::findFriends);
     }
 
     public void addFriend(RoutingContext context) {
@@ -40,6 +41,19 @@ public class FriendRouter {
         String condition = ParameterUtils.getStringParam(context, "condition");
 
         friendsService.getFriend(condition, res -> {
+            if (res.failed()) {
+                context.fail(res.cause());
+            } else {
+                ResponseUtils.responseSuccess(context, "friends", res.result());
+            }
+
+        });
+    }
+
+    //查找要添加的好友
+    public void findFriends(RoutingContext context) {
+        int uid = ((Auth) context.get("auth")).getUid();
+        friendsService.findFriends(uid, res -> {
             if (res.failed()) {
                 context.fail(res.cause());
             } else {
