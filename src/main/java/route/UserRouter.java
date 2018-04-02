@@ -57,7 +57,7 @@ public class UserRouter {
 
     public void getUser(RoutingContext context){
         int uid = ((Auth) context.get("auth")).getUid();
-        userDao.getUserById(uid,res->{
+        userService.getUserInfo(uid,res->{
             if(res.failed()) {
                 context.fail(res.cause());
             } else {

@@ -38,7 +38,7 @@ public class MainVerticle extends AbstractVerticle{
                 .allowedMethods(CorsUtils.getCorsMethods()));
 
         //加载静态文件
-        router.route("/*").handler(StaticHandler.create().setAllowRootFileSystemAccess(true).setWebRoot("D:/dkIMWeb/webroot").setIndexPage("login.html"));
+        router.route("/*").handler(StaticHandler.create().setAllowRootFileSystemAccess(true).setWebRoot("C:/+work/dkIMWeb/webroot").setIndexPage("login.html"));
         router.route().handler(AuthHandler.create());
         //异常捕捉
         router.route().failureHandler(routingContext->{

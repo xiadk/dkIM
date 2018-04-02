@@ -21,7 +21,7 @@ public class FriendsService {
         return service;
     }
 
-    public void addFriend(String condition, Handler<AsyncResult<String>> handler){
+    public void addFriend(int uid, Handler<AsyncResult<String>> handler){
 
 
     }
@@ -30,4 +30,5 @@ public class FriendsService {
 
         userDao.getUserByPhoneOrName(condition,handler);
     }
+
 }

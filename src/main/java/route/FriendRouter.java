@@ -1,5 +1,6 @@
 package route;
 
+import bean.Auth;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -26,25 +27,26 @@ public class FriendRouter {
     }
 
     public void addFriend(RoutingContext context) {
-        String condition = ParameterUtils.getStringParam(context,"condition");
+        int uid = ParameterUtils.getIntegerParam(context,"uid");
 
-        friendsService.addFriend(condition,res->{
+        friendsService.addFriend(uid,res->{
 
         });
 
     }
 
+    //查找要添加的好友
     public void getFriend(RoutingContext context) {
-        String condition = ParameterUtils.getStringParam(context,"condition");
+        String condition = ParameterUtils.getStringParam(context, "condition");
 
-        friendsService.getFriend(condition,res->{
-            if(res.failed()) {
+        friendsService.getFriend(condition, res -> {
+            if (res.failed()) {
                 context.fail(res.cause());
             } else {
-                ResponseUtils.responseSuccess(context,"friends",res.result());
+                ResponseUtils.responseSuccess(context, "friends", res.result());
             }
 
         });
-
     }
+
 }
