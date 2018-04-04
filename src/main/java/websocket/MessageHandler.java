@@ -59,7 +59,7 @@ public class MessageHandler implements Handler<WebSocketFrame> {
                             } else {
                                 JsonArray jsonArray = messageRes.result();
                                 JsonObject respMessage = new JsonObject();
-                                respMessage.put("msgId", 0200).put("body", jsonArray);
+                                respMessage.put("msgId", "0200").put("body", jsonArray);
                                 serverWebSocket.writeFinalTextFrame(respMessage.encode());
                             }
                         });
@@ -71,25 +71,30 @@ public class MessageHandler implements Handler<WebSocketFrame> {
                             if (fidRes.failed()) {
                                 serverWebSocket.writeFinalTextFrame(new AppException(ResponseUtils.SERVER_FAIL, "服务器错误").getMessage());
                             } else if (fidRes.result() == null) {
-                                //目标用户不在线，将信息存入缓存中
-                                RedisOperator.lpush(messageKey + String.valueOf(fid), webSocketFrame.textData(), lpushRes -> {
-                                    if (lpushRes.failed()) {
-                                        serverWebSocket.writeFinalTextFrame(new AppException(ResponseUtils.SERVER_FAIL, "服务器错误").getMessage());
-                                    } else {
-                                        JsonObject respMessage = new JsonObject();
-                                        respMessage.put("msgId", "0200").put("body", "发送成功");
-                                        serverWebSocket.writeFinalTextFrame(respMessage.encode());
-                                    }
-
-                                });
-                            } else {
-                                //目标用户在线
-                                String clientID = fidRes.result();
-                                ServerWebSocket fidSocket = serverWebSocketMap.get(clientID);
-                                String backMsg = formReturnMsg(message, Integer.parseInt(uid), backMsgRes -> {
+                               formReturnMsg(message, Integer.parseInt(uid), backMsgRes -> {
                                     if (backMsgRes.failed()) {
                                         serverWebSocket.writeFinalTextFrame(backMsgRes.cause().getMessage());
                                     } else {
+                                        //目标用户不在线，将信息存入缓存中
+                                        RedisOperator.lpush(messageKey + String.valueOf(fid), backMsgRes.result(), lpushRes -> {
+                                            if (lpushRes.failed()) {
+                                                serverWebSocket.writeFinalTextFrame(new AppException(ResponseUtils.SERVER_FAIL, "服务器错误").getMessage());
+                                            } else {
+                                                JsonObject respMessage = new JsonObject();
+                                                respMessage.put("msgId", "0200").put("body", "发送成功");
+                                                serverWebSocket.writeFinalTextFrame(respMessage.encode());
+                                            }
+
+                                        });
+                                    }
+                                });
+                            } else {
+                                //目标用户在线
+                                formReturnMsg(message, Integer.parseInt(uid), backMsgRes -> {
+                                    if (backMsgRes.failed()) {
+                                        serverWebSocket.writeFinalTextFrame(backMsgRes.cause().getMessage());
+                                    } else {
+                                        ServerWebSocket fidSocket = serverWebSocketMap.get(fidRes.result());
                                         fidSocket.writeFinalTextFrame(backMsgRes.result());
                                         JsonObject respMessage = new JsonObject();
                                         respMessage.put("msgId", "0200").put("body", "发送成功");
@@ -105,6 +110,16 @@ public class MessageHandler implements Handler<WebSocketFrame> {
 
 
                 });
+
+
+                //连接关闭
+                serverWebSocket.closeHandler(res -> {
+                    System.out.println("退出:" + serverWebSocket.binaryHandlerID());
+                    serverWebSocketMap.remove(serverWebSocket.binaryHandlerID());
+                    RedisOperator.delete(clientIDKey + uid, delRes -> {
+                    });
+                });
+
             }
         });
 
@@ -116,7 +131,7 @@ public class MessageHandler implements Handler<WebSocketFrame> {
     }
 
     //格式化返回信息
-    public String formReturnMsg(Message message, int uid, Handler<AsyncResult<String>> handler) {
+    public void formReturnMsg(Message message, int uid, Handler<AsyncResult<String>> handler) {
 
         switch (message.getType()) {
             case TEXT:
@@ -132,7 +147,6 @@ public class MessageHandler implements Handler<WebSocketFrame> {
             default:
                 break;
         }
-        return "ss";
     }
 
 

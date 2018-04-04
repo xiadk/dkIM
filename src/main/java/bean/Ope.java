@@ -8,10 +8,7 @@ public enum  Ope {
         this.ope = ope;
     }
 
-    @Override
-    public String toString() {
-        return "Ope{" +
-                "ope=" + ope +
-                '}';
+    public int getOpe(){
+        return this.ope;
     }
 }

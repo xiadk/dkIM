@@ -11,10 +11,7 @@ public enum  Type {
         this.val = val;
     }
 
-    @Override
-    public String toString() {
-        return "Type{" +
-                "val=" + val +
-                '}';
+    public int getVal(){
+        return this.val;
     }
 }

@@ -17,10 +17,6 @@ public class WebSocketHandler implements Handler<ServerWebSocket> {
         String clientID = serverWebSocket.binaryHandlerID();
         serverWebSocketMap.put(clientID, serverWebSocket);
         serverWebSocket.frameHandler(MessageHandler.create(serverWebSocket,serverWebSocketMap));
-        serverWebSocket.closeHandler(res -> {
-            System.out.println("退出:"+clientID);
-            serverWebSocketMap.remove(clientID);
-        });
     }
 
     public static WebSocketHandler create() {
