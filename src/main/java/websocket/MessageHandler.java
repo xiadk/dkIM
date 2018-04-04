@@ -133,20 +133,20 @@ public class MessageHandler implements Handler<WebSocketFrame> {
     //格式化返回信息
     public void formReturnMsg(Message message, int uid, Handler<AsyncResult<String>> handler) {
 
-        switch (message.getType()) {
-            case TEXT:
+        /*switch (message.getType()) {
+            *//*case Type.TEXT.getVal():
 
                 break;
             case PHOTO:
 
                 break;
-            case ADD_FRIEND:
+            case ADD_FRIEND:*//*
 
                 sendAddFriend(message, uid, handler);
                 break;
             default:
                 break;
-        }
+        }*/
     }
 
 
