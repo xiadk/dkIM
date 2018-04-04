@@ -4,6 +4,7 @@ import bean.User;
 import dao.FriendsDao;
 import dao.UserDao;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
@@ -21,9 +22,18 @@ public class FriendsService {
         return service;
     }
 
-    public void addFriend(int uid, Handler<AsyncResult<String>> handler){
-
-
+    public void addFriend(int uid,int fid,String fidName,String uidName, Handler<AsyncResult<Void>> handler){
+        Future<Void> future1 = Future.future();
+        friendsDao.insertFriend(uid,fid,fidName,uid,future1);
+        Future<Void> future2 = Future.future();
+        friendsDao.insertFriend(fid,uid,uidName,uid,future2);
+        CompositeFuture.all(future1,future2).setHandler(res->{
+            if(res.failed()) {
+                handler.handle(Future.failedFuture(res.cause()));
+            } else {
+                handler.handle(Future.succeededFuture());
+            }
+        });
     }
 
     public void getFriend(String condition, Handler<AsyncResult<List<JsonObject>>> handler){
@@ -41,5 +51,21 @@ public class FriendsService {
             }
         });
     }
+
+
+    public void delFriend(int uid,int fid,Handler<AsyncResult<Void>> handler){
+        Future<Void> future1 = Future.future();
+        friendsDao.deleteFriend(uid,fid,future1);
+        Future<Void> future2 = Future.future();
+        friendsDao.deleteFriend(fid,uid,future2);
+        CompositeFuture.all(future1,future2).setHandler(res->{
+            if(res.failed()) {
+                handler.handle(Future.failedFuture(res.cause()));
+            } else {
+                handler.handle(Future.succeededFuture());
+            }
+        });
+    }
+
 
 }

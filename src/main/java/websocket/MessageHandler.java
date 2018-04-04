@@ -29,9 +29,9 @@ public class MessageHandler implements Handler<WebSocketFrame> {
     public void handle(WebSocketFrame webSocketFrame) {
         Message message = new JsonObject(webSocketFrame.textData()).mapTo(Message.class);
         //输出打印日志
-        System.out.println("clientID:" + serverWebSocket.binaryHandlerID() + "websocket消息：" + message);
+        System.out.println(message);
 
-        String clientIDKey = "clientID:";
+//        String clientIDKey = "clientID:";
         String messageKey = "message:";
         String token = message.getToken();
 
@@ -42,7 +42,60 @@ public class MessageHandler implements Handler<WebSocketFrame> {
                 serverWebSocket.writeFinalTextFrame(new AppException(ResponseUtils.REQUEST_NOT_EXIST, "用户未登陆").getMessage());
             } else {
                 String uid = uidRes.result();
-                RedisOperator.get(clientIDKey + uid, binaryHandlerIDRes -> {
+                ServerWebSocket uidSocket = serverWebSocketMap.get(uid);
+                if(uidSocket == null) {
+                    serverWebSocketMap.put(uid, serverWebSocket);
+                }
+                //第一次连接fid默认-1
+                if (message.getFid() <=0) {
+                    //拉取缓存信息
+                    RedisOperator.lpopall(messageKey + uid, messageRes -> {
+                        if (messageRes.failed()) {
+                            serverWebSocket.writeFinalTextFrame(new AppException(ResponseUtils.SERVER_FAIL, "服务器错误").getMessage());
+                        } else {
+                            JsonArray jsonArray = messageRes.result();
+                            JsonObject respMessage = new JsonObject();
+                            respMessage.put("msgId", "0200").put("body", jsonArray);
+                            serverWebSocket.writeFinalTextFrame(respMessage.encode());
+                        }
+                    });
+                } else {
+                    //给目标客户端发送消息
+                    String fid = String.valueOf(message.getFid());
+                    ServerWebSocket fidSocket = serverWebSocketMap.get(fid);
+                    if (fidSocket == null) {
+                        //目标用户不在线，将信息存入缓存中
+                        formReturnMsg(message, Integer.parseInt(uid), backMsgRes -> {
+                            if (backMsgRes.failed()) {
+                                serverWebSocket.writeFinalTextFrame(backMsgRes.cause().getMessage());
+                            } else {
+                                RedisOperator.lpush(messageKey + fid, backMsgRes.result(), lpushRes -> {
+                                    if (lpushRes.failed()) {
+                                        serverWebSocket.writeFinalTextFrame(new AppException(ResponseUtils.SERVER_FAIL, "服务器错误").getMessage());
+                                    } else {
+                                        JsonObject respMessage = new JsonObject();
+                                        respMessage.put("msgId", "0200").put("body", "发送成功");
+                                        serverWebSocket.writeFinalTextFrame(respMessage.encode());
+                                    }
+
+                                });
+                            }
+                        });
+                    } else {
+                        //目标用户在线
+                        formReturnMsg(message, Integer.parseInt(uid), backMsgRes -> {
+                            if (backMsgRes.failed()) {
+                                serverWebSocket.writeFinalTextFrame(backMsgRes.cause().getMessage());
+                            } else {
+                                fidSocket.writeFinalTextFrame(backMsgRes.result());
+                                JsonObject respMessage = new JsonObject();
+                                respMessage.put("msgId", "0200").put("body", "发送成功");
+                                serverWebSocket.writeFinalTextFrame(respMessage.encode());
+                            }
+                        });
+                    }
+                }
+                /*RedisOperator.get(clientIDKey + uid, binaryHandlerIDRes -> {
                     if (binaryHandlerIDRes.failed()) {
                         serverWebSocket.writeFinalTextFrame(new AppException(ResponseUtils.SERVER_FAIL, "服务器错误").getMessage());
                     } else if (binaryHandlerIDRes.result() == null) {
@@ -109,22 +162,20 @@ public class MessageHandler implements Handler<WebSocketFrame> {
                     }
 
 
-                });
+                });*/
 
 
-                //连接关闭
-                serverWebSocket.closeHandler(res -> {
-                    System.out.println("退出:" + serverWebSocket.binaryHandlerID());
-                    serverWebSocketMap.remove(serverWebSocket.binaryHandlerID());
-                    RedisOperator.delete(clientIDKey + uid, delRes -> {
-                    });
-                });
+            //连接关闭
+            serverWebSocket.closeHandler(res -> {
+                System.out.println("退出:" + uid);
+                serverWebSocketMap.remove(uid);
+            });
 
-            }
-        });
+        }
+    });
 
 
-    }
+}
 
     public static MessageHandler create(ServerWebSocket serverWebSocket, Map<String, ServerWebSocket> serverWebSocketMap) {
         return new MessageHandler(serverWebSocket, serverWebSocketMap);
@@ -133,20 +184,20 @@ public class MessageHandler implements Handler<WebSocketFrame> {
     //格式化返回信息
     public void formReturnMsg(Message message, int uid, Handler<AsyncResult<String>> handler) {
 
-        /*switch (message.getType()) {
-            *//*case Type.TEXT.getVal():
+        switch (message.getType()) {
+            case TEXT:
 
                 break;
             case PHOTO:
 
                 break;
-            case ADD_FRIEND:*//*
+            case ADD_FRIEND:
 
                 sendAddFriend(message, uid, handler);
                 break;
             default:
                 break;
-        }*/
+        }
     }
 
 
@@ -158,8 +209,8 @@ public class MessageHandler implements Handler<WebSocketFrame> {
                 handler.handle(Future.failedFuture(new AppException(ResponseUtils.SERVER_FAIL, "服务器错误")));
             } else {
                 JsonObject returnMsg = userRes.result();
-                returnMsg.put("ope", message.getOpe());
-                returnMsg.put("type", message.getType());
+                returnMsg.put("ope", message.getOpe().val);
+                returnMsg.put("type", message.getType().val);
                 handler.handle(Future.succeededFuture(returnMsg.toString()));
             }
 

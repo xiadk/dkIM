@@ -28,10 +28,18 @@ public class FriendRouter {
     }
 
     public void addFriend(RoutingContext context) {
+        int fid = ((Auth) context.get("auth")).getUid();
         int uid = ParameterUtils.getIntegerParam(context,"uid");
+        String fidName = ParameterUtils.getStringParam(context,"fidname");
+        String uidName = ParameterUtils.getStringParam(context,"uidname");
 
-        friendsService.addFriend(uid,res->{
+        friendsService.addFriend(uid,fid,fidName,uidName,res->{
 
+            if(res.failed()){
+                context.fail(res.cause());
+            } else {
+                ResponseUtils.responseSuccess(context);
+            }
         });
 
     }
@@ -60,6 +68,20 @@ public class FriendRouter {
                 ResponseUtils.responseSuccess(context, "friends", res.result());
             }
 
+        });
+    }
+
+
+    //删除指定好友
+    public void delFriends(RoutingContext context) {
+        int uid = ((Auth) context.get("auth")).getUid();
+        int fid = ParameterUtils.getIntegerParam(context,"fid");
+        friendsService.delFriend(uid,fid,res->{
+            if(res.failed()) {
+                context.fail(res.cause());
+            } else {
+                ResponseUtils.responseSuccess(context);
+            }
         });
     }
 

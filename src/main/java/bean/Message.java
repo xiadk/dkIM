@@ -15,8 +15,8 @@ public class Message {
         this.token = token;
     }
 
-    public int getOpe() {
-        return ope.getOpe();
+    public Ope getOpe() {
+        return ope;
     }
 
     public void setOpe(Ope ope) {
@@ -31,8 +31,8 @@ public class Message {
         this.fid = fid;
     }
 
-    public int getType() {
-        return type.getVal();
+    public Type getType() {
+        return type;
     }
 
     public void setType(Type type) {

@@ -29,24 +29,47 @@ public class LoginService {
                 if (!pwd.equals(password)) {
                     handler.handle(Future.failedFuture(new AppException(ResponseUtils.PWD_ERROR,"密码错误")));
                 } else {
-                    //将令牌放入redis中
-                    String token = BasicUtils.createToken();
-                    Future<Long> future1 = Future.future();
-                    RedisOperator.add(token,uid+"",3600l,future1);
+                    RedisOperator.get("uid:"+uid,tokenRes->{
+                        if(tokenRes.failed()) {
+                            handler.handle(Future.failedFuture(res.cause()));
+                        } else {
+                            String oldToken = tokenRes.result();
+                            if(oldToken!=null) {
+                                RedisOperator.delete(oldToken,delTokenRes->{
+                                    if(delTokenRes.failed()) {
+                                        handler.handle(Future.failedFuture(res.cause()));
+                                    } else {
+                                        setToken(uid,handler);
+                                    }
+                                });
+                            } else {
+                                setToken(uid,handler);
+                            }
 
-                    Future<Void> future2 = Future.future();
-                    RedisOperator.set("uid:"+uid,token,future2);
-                    CompositeFuture.all(future1,future2).setHandler(res1->{
-                        if(res1.failed()){
-                            handler.handle(Future.failedFuture(res1.cause()));
-                        }else {
-                            handler.handle(Future.succeededFuture(token));
                         }
                     });
+
 
                 }
             }
         });
 
+    }
+
+    public void setToken (int uid,Handler<AsyncResult<String>> handler){
+        //将令牌放入redis中
+        String token = BasicUtils.createToken();
+        Future<Long> future1 = Future.future();
+        RedisOperator.add(token,uid+"",3600l,future1);
+
+        Future<Void> future2 = Future.future();
+        RedisOperator.set("uid:"+uid,token,future2);
+        CompositeFuture.all(future1,future2).setHandler(res1->{
+            if(res1.failed()){
+                handler.handle(Future.failedFuture(res1.cause()));
+            }else {
+                handler.handle(Future.succeededFuture(token));
+            }
+        });
     }
 }

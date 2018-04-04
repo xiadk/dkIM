@@ -298,12 +298,14 @@ public class RedisOperator {
                 done.handle(Future.failedFuture(lenRes.cause()));
             } else {
                 redisClient.lrange(key, 0, lenRes.result(), lrangeRes -> {
-                    close(redisClient);
                     if (lrangeRes.failed()) {
                         logger.error("redis lrange: ", lrangeRes.cause(), " key: " + key);
                         done.handle(Future.failedFuture(lrangeRes.cause()));
                     }else{
-                        done.handle(Future.succeededFuture(lrangeRes.result()));
+                        redisClient.del(key,delRes->{
+                            close(redisClient);
+                            done.handle(Future.succeededFuture(lrangeRes.result()));
+                        });
                     }
                 });
             }

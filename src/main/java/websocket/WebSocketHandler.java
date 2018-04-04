@@ -14,8 +14,8 @@ public class WebSocketHandler implements Handler<ServerWebSocket> {
 
     @Override
     public void handle(ServerWebSocket serverWebSocket) {
-        String clientID = serverWebSocket.binaryHandlerID();
-        serverWebSocketMap.put(clientID, serverWebSocket);
+        /*String clientID = serverWebSocket.binaryHandlerID();
+        serverWebSocketMap.put(clientID, serverWebSocket);*/
         serverWebSocket.frameHandler(MessageHandler.create(serverWebSocket,serverWebSocketMap));
     }
 
