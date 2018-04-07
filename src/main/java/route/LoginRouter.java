@@ -1,5 +1,6 @@
 package route;
 
+import bean.Auth;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -21,6 +22,7 @@ public class LoginRouter {
 
     public void init(){
          router.post("/login").handler(this::login);
+         router.get("/login_out").handler(this::login_out);
     }
 
     public void login(RoutingContext context){
@@ -35,5 +37,16 @@ public class LoginRouter {
             }
         });
 
+    }
+
+    public void login_out(RoutingContext context) {
+        int uid = ((Auth) context.get("auth")).getUid();
+        loginService.login_out(uid,res->{
+            if(res.failed()) {
+                context.fail(res.cause());
+            } else {
+                ResponseUtils.responseSuccess(context);
+            }
+        });
     }
 }

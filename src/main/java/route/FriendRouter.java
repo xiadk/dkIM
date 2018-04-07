@@ -25,6 +25,8 @@ public class FriendRouter {
          router.post("/").handler(this::addFriend);
          router.get("/").handler(this::getFriend);
          router.get("/findFriends").handler(this::findFriends);
+         router.get("/del").handler(this::delFriends);
+         router.post("/alias").handler(this::updateAlias);
     }
 
     public void addFriend(RoutingContext context) {
@@ -77,6 +79,19 @@ public class FriendRouter {
         int uid = ((Auth) context.get("auth")).getUid();
         int fid = ParameterUtils.getIntegerParam(context,"fid");
         friendsService.delFriend(uid,fid,res->{
+            if(res.failed()) {
+                context.fail(res.cause());
+            } else {
+                ResponseUtils.responseSuccess(context);
+            }
+        });
+    }
+
+    public void updateAlias(RoutingContext context) {
+        int uid = ((Auth) context.get("auth")).getUid();
+        int fid = ParameterUtils.getIntegerParam(context,"fid");
+        String alias = ParameterUtils.getStringParam(context,"alias");
+        friendsService.updateAlias(alias,uid,fid,res->{
             if(res.failed()) {
                 context.fail(res.cause());
             } else {

@@ -72,4 +72,15 @@ public class LoginService {
             }
         });
     }
+
+    public void login_out(int uid,Handler<AsyncResult<Long>> handler){
+        RedisOperator.get("uid:"+String.valueOf(uid),tokenRes->{
+            if(tokenRes.failed()) {
+                handler.handle(Future.failedFuture(tokenRes.cause()));
+            } else {
+                String token = tokenRes.result();
+                RedisOperator.delete(token,handler);
+            }
+        });
+    }
 }

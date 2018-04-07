@@ -1,6 +1,5 @@
 package service;
 
-import bean.User;
 import dao.FriendsDao;
 import dao.UserDao;
 import io.vertx.core.AsyncResult;
@@ -18,33 +17,34 @@ public class FriendsService {
     private FriendsDao friendsDao = FriendsDao.getFriendsDao();
     private UserDao userDao = UserDao.getUserDao();
 
-    public static FriendsService getFriendsService(){
+    public static FriendsService getFriendsService() {
         return service;
     }
 
-    public void addFriend(int uid,int fid,String fidName,String uidName, Handler<AsyncResult<Void>> handler){
+    public void addFriend(int uid, int fid, String fidName, String uidName, Handler<AsyncResult<Void>> handler) {
         Future<Void> future1 = Future.future();
-        friendsDao.insertFriend(uid,fid,fidName,uid,future1);
+        friendsDao.insertFriend(uid, fid, fidName, uid, future1);
         Future<Void> future2 = Future.future();
-        friendsDao.insertFriend(fid,uid,uidName,uid,future2);
-        CompositeFuture.all(future1,future2).setHandler(res->{
-            if(res.failed()) {
-                handler.handle(Future.failedFuture(res.cause()));
+        friendsDao.insertFriend(fid, uid, uidName, uid, future2);
+        CompositeFuture.all(future1, future2).setHandler(res1 -> {
+            if (res1.failed()) {
+                handler.handle(Future.failedFuture(res1.cause()));
             } else {
                 handler.handle(Future.succeededFuture());
             }
         });
+
     }
 
-    public void getFriend(String condition, Handler<AsyncResult<List<JsonObject>>> handler){
+    public void getFriend(String condition, Handler<AsyncResult<List<JsonObject>>> handler) {
 
-        userDao.getUserByPhoneOrName(condition,handler);
+        userDao.getUserByPhoneOrName(condition, handler);
     }
 
 
-    public void findFriends(int uid,Handler<AsyncResult<List<JsonObject>>> handler) {
-        userDao.findFriends(uid,res->{
-            if(res.failed()) {
+    public void findFriends(int uid, Handler<AsyncResult<List<JsonObject>>> handler) {
+        userDao.findFriends(uid, res -> {
+            if (res.failed()) {
                 handler.handle(Future.failedFuture(res.cause()));
             } else {
                 handler.handle(Future.succeededFuture(res.result()));
@@ -53,13 +53,13 @@ public class FriendsService {
     }
 
 
-    public void delFriend(int uid,int fid,Handler<AsyncResult<Void>> handler){
+    public void delFriend(int uid, int fid, Handler<AsyncResult<Void>> handler) {
         Future<Void> future1 = Future.future();
-        friendsDao.deleteFriend(uid,fid,future1);
+        friendsDao.deleteFriend(uid, fid, future1);
         Future<Void> future2 = Future.future();
-        friendsDao.deleteFriend(fid,uid,future2);
-        CompositeFuture.all(future1,future2).setHandler(res->{
-            if(res.failed()) {
+        friendsDao.deleteFriend(fid, uid, future2);
+        CompositeFuture.all(future1, future2).setHandler(res -> {
+            if (res.failed()) {
                 handler.handle(Future.failedFuture(res.cause()));
             } else {
                 handler.handle(Future.succeededFuture());
@@ -67,5 +67,8 @@ public class FriendsService {
         });
     }
 
+    public void updateAlias(String alias,int uid,int fid,Handler<AsyncResult<Void>> handler){
+        friendsDao.updateAlias(alias,uid,fid,handler);
+    }
 
 }

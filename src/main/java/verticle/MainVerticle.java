@@ -11,6 +11,7 @@ import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CorsHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import route.FriendRouter;
+import route.MessageRouter;
 import route.UserRouter;
 import util.ConfigUtils;
 import route.LoginRouter;
@@ -50,6 +51,8 @@ public class MainVerticle extends AbstractVerticle{
 
 
         router.mountSubRouter("/", new LoginRouter(vertx).router);
+
+        router.mountSubRouter("/messages",new MessageRouter(vertx).router);
 
         router.mountSubRouter("/user", new UserRouter(vertx).router);
 

@@ -6,6 +6,24 @@ public class Message {
     private int fid;
     private Type type;
     private String body;
+    private int is_read;
+    private int is_del;
+
+    public int getIs_read() {
+        return is_read;
+    }
+
+    public void setIs_read(int is_read) {
+        this.is_read = is_read;
+    }
+
+    public int getIs_del() {
+        return is_del;
+    }
+
+    public void setIs_del(int is_del) {
+        this.is_del = is_del;
+    }
 
     public String getToken() {
         return token;
@@ -55,6 +73,8 @@ public class Message {
                 ", fid=" + fid +
                 ", type=" + type +
                 ", body='" + body + '\'' +
+                ", is_read='" + is_read + '\'' +
+                ", is_del='" + is_del + '\'' +
                 '}';
     }
 }

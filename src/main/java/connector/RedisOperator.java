@@ -301,8 +301,8 @@ public class RedisOperator {
                     if (lrangeRes.failed()) {
                         logger.error("redis lrange: ", lrangeRes.cause(), " key: " + key);
                         done.handle(Future.failedFuture(lrangeRes.cause()));
-                    }else{
-                        redisClient.del(key,delRes->{
+                    } else {
+                        redisClient.del(key, delRes -> {
                             close(redisClient);
                             done.handle(Future.succeededFuture(lrangeRes.result()));
                         });
@@ -355,23 +355,15 @@ public class RedisOperator {
     }
 
     public static void delete(String key, Handler<AsyncResult<Long>> done) {
-        setExpires(null, key, 0L, res -> {
-            if (res.failed()) {
-                done.handle(Future.failedFuture(res.cause()));
-            } else if (res.result() == 1L) {
-                done.handle(Future.succeededFuture(res.result()));
+        RedisClient redisClient = RedisConnector.getRedisClient();
+        redisClient.del(key, res_del -> {
+            if (res_del.succeeded()) {
+                done.handle(Future.succeededFuture(res_del.result()));
             } else {
-                RedisClient redisClient = RedisConnector.getRedisClient();
-                redisClient.del(key, res_del -> {
-                    if (res_del.succeeded()) {
-                        done.handle(Future.succeededFuture(res_del.result()));
-                    } else {
-                        logger.error("redis del失败: ", res_del.cause(), " key: " + key);
-                        done.handle(Future.failedFuture(res_del.cause()));
-                    }
-                    close(redisClient);
-                });
+                logger.error("redis del失败: ", res_del.cause(), " key: " + key);
+                done.handle(Future.failedFuture(res_del.cause()));
             }
+            close(redisClient);
         });
     }
 
