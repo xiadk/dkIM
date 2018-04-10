@@ -27,6 +27,9 @@ public class FriendRouter {
          router.get("/findFriends").handler(this::findFriends);
          router.get("/del").handler(this::delFriends);
          router.post("/alias").handler(this::updateAlias);
+        router.post("/delcontact").handler(this::delContact);
+        router.post("/addcontact").handler(this::addContact);
+        router.get("/getcontacts").handler(this::getContacts);
     }
 
     public void addFriend(RoutingContext context) {
@@ -97,6 +100,43 @@ public class FriendRouter {
             } else {
                 ResponseUtils.responseSuccess(context);
             }
+        });
+    }
+
+    public void addContact(RoutingContext context) {
+        int uid = ((Auth) context.get("auth")).getUid();
+        int fid = ParameterUtils.getIntegerParam(context,"fid");
+        friendsService.addContact(fid,uid,res->{
+            if(res.failed()) {
+                context.fail(res.cause());
+            } else {
+                ResponseUtils.responseSuccess(context);
+            }
+        });
+    }
+
+    public void delContact(RoutingContext context) {
+        int uid = ((Auth) context.get("auth")).getUid();
+        int fid = ParameterUtils.getIntegerParam(context,"fid");
+        friendsService.delContact(uid,fid,res->{
+            if(res.failed()) {
+                context.fail(res.cause());
+            } else {
+                ResponseUtils.responseSuccess(context);
+            }
+        });
+    }
+
+    public void getContacts(RoutingContext context) {
+        int uid = ((Auth) context.get("auth")).getUid();
+
+        friendsService.getContacts(uid, res -> {
+            if (res.failed()) {
+                context.fail(res.cause());
+            } else {
+                ResponseUtils.responseSuccess(context, "contacts", res.result());
+            }
+
         });
     }
 

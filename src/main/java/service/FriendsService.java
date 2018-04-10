@@ -71,4 +71,16 @@ public class FriendsService {
         friendsDao.updateAlias(alias,uid,fid,handler);
     }
 
+    public void addContact(int fid,int uid,Handler<AsyncResult<Void>> handler) {
+        friendsDao.insertContact(fid,uid,handler);
+    }
+
+    public void delContact(int uid,int fid,Handler<AsyncResult<Void>> handler) {
+        friendsDao.deleteContact(uid,fid,handler);
+    }
+
+    public void getContacts(int uid,Handler<AsyncResult<List<JsonObject>>> handler){
+        friendsDao.selectContact(uid,handler);
+    }
+
 }
