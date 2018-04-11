@@ -101,7 +101,7 @@ public class FriendsDao {
     }
 
     public void selectContact(int uid,Handler<AsyncResult<List<JsonObject>>> handler){
-        String sql = "select contacts.new_content,contacts.fid,users.photo, from contacts,users,friends where contacts.fid=users.uid and contacts.fid=friends.fid and contacts.uid=friends.uid and contacts.uid=? ";
+        String sql = "select contacts.new_content,contacts.fid,users.photo,alias,coalesce(msg.unread,0) as unread from users,friends,contacts LEFT JOIN (select uid,fid,count(*) as unread from messages where is_read=0 GROUP BY uid,fid) as msg on msg.fid = contacts.uid and msg.uid = contacts.fid where contacts.fid=users.uid and contacts.fid=friends.fid and contacts.uid=friends.uid and contacts.uid=?; ";
         JsonArray params = new JsonArray();
         params.add(uid);
         BaseDao.queryWithParams(sql,params,res->{
