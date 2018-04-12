@@ -17,8 +17,8 @@ public class MessageDao {
         return messageDao;
     }
 
-    public void insertAddFriend(Message message, int uid, Handler<AsyncResult<Integer>> handler){
-        String sql = "insert into messages (uid,fid,ope,type) values(?,?,?,?) returning mid";
+    public void insertMessage(Message message, int uid, Handler<AsyncResult<Integer>> handler){
+        String sql = "insert into messages (uid,fid,ope,type,body) values(?,?,?,?) returning mid";
 
         JsonArray params = new JsonArray();
         params.add(uid).add(message.getFid()).add(message.getOpe().val).add(message.getType().val);

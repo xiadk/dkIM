@@ -1,5 +1,6 @@
 package dao;
 
+import bean.Message;
 import exception.AppException;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -109,6 +110,19 @@ public class FriendsDao {
                 handler.handle(Future.failedFuture(res.cause()));
             } else {
                 handler.handle(Future.succeededFuture(res.result().getRows()));
+            }
+        });
+    }
+
+    public void updateNewContent( Message message,int uid,Handler<AsyncResult<Void>> handler){
+        String sql = "update contacts set new_content=? where uid=? and fid=?";
+         JsonArray params = new JsonArray();
+        params.add(message.getBody()).add(uid).add(message.getFid());
+        BaseDao.updateWithParams(sql,params,res->{
+            if(res.failed() || res.result().getUpdated()!=1) {
+                handler.handle(Future.failedFuture(res.cause()));
+            } else {
+                handler.handle(Future.succeededFuture());
             }
         });
     }

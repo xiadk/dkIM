@@ -4,6 +4,7 @@ import bean.Message;
 import dao.FriendsDao;
 import dao.MessageDao;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
@@ -20,6 +21,18 @@ public class PushMessage {
     public void push(Message message,int uid,Handler<AsyncResult<Integer>> handler){
         switch (message.getType()) {
             case TEXT:
+                Future <Integer>future = Future.future();
+                Future <Void>future1 = Future.future();
+                messageDao.insertMessage(message,uid,future);
+                friendsDao.updateNewContent(message,uid,future1);
+                CompositeFuture.all(future,future1).setHandler(res->{
+                   if(res.failed()) {
+                       handler.handle(Future.failedFuture(res.cause()));
+                   } else {
+                       handler.handle(Future.succeededFuture(future.result()));
+                   }
+                });
+
 
                 break;
             case PHOTO:
@@ -30,7 +43,7 @@ public class PushMessage {
                     if (res.failed()) {
                         handler.handle(Future.failedFuture(res.cause()));
                     } else {
-                        messageDao.insertAddFriend(message, uid, handler);
+                        messageDao.insertMessage(message, uid, handler);
                     }
                 });
                 break;
