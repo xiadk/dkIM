@@ -106,7 +106,7 @@ public class UserDao {
     }
 
     public void findFriends(int uid, Handler<AsyncResult<List<JsonObject>>> handler) {
-        String sql = "select fid,name,photo,alias,address from friends,users where friends.fid=users.uid and friends.uid=? order by friends.create_time";
+        String sql = "select fid,name,photo,alias,address from friends,users where friends.fid=users.uid and friends.ope=0 and friends.uid=? order by friends.alias";
         JsonArray params = new JsonArray();
         params.add(uid);
         BaseDao.queryWithParams(sql,params,res->{
@@ -114,6 +114,23 @@ public class UserDao {
                 handler.handle(Future.failedFuture(res.cause()));
             } else {
                 handler.handle(Future.succeededFuture(res.result().getRows()));
+            }
+        });
+    }
+
+    public void findFriendByfid(int fid, Handler<AsyncResult<JsonObject>> handler) {
+        Map<String,Object> map = new HashMap<>();
+        map.put("uid",fid);
+
+        JsonArray jsonArray = new JsonArray();
+        jsonArray.add("uid").add("name").add("photo").add("address").add("sex");
+        BaseDao.select("users",map,jsonArray,res->{
+            if(res.failed()){
+                handler.handle(Future.failedFuture(res.cause()));
+            } else if (res.result().getRows().size() == 0){
+                handler.handle(Future.failedFuture(new AppException(ResponseUtils.REQUEST_NOT_EXIST,"用户未注册")));
+            } else {
+                handler.handle(Future.succeededFuture(res.result().getRows().get(0)));
             }
         });
     }

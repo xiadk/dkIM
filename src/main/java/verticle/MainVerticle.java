@@ -10,11 +10,8 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CorsHandler;
 import io.vertx.ext.web.handler.StaticHandler;
-import route.FriendRouter;
-import route.MessageRouter;
-import route.UserRouter;
+import route.*;
 import util.ConfigUtils;
-import route.LoginRouter;
 import util.CorsUtils;
 import util.ResponseUtils;
 import websocket.WebSocketHandler;
@@ -39,7 +36,7 @@ public class MainVerticle extends AbstractVerticle{
                 .allowedMethods(CorsUtils.getCorsMethods()));
 
         //加载静态文件
-        router.route("/*").handler(StaticHandler.create().setAllowRootFileSystemAccess(true).setWebRoot("C:/+work/dkIMWeb/webroot").setIndexPage("login.html"));
+        router.route("/*").handler(StaticHandler.create().setAllowRootFileSystemAccess(true).setWebRoot("D:/dkIMWeb/webroot").setIndexPage("login.html"));
         router.route().handler(AuthHandler.create());
         //异常捕捉
         router.route().failureHandler(routingContext->{
@@ -57,6 +54,10 @@ public class MainVerticle extends AbstractVerticle{
         router.mountSubRouter("/user", new UserRouter(vertx).router);
 
         router.mountSubRouter("/friend",new FriendRouter(vertx).router);
+
+        router.mountSubRouter("/group",new GroupRouter(vertx).router);
+
+        router.mountSubRouter("/space",new SpaceRouter(vertx).router);
         httpServer.websocketHandler(WebSocketHandler.create());
         httpServer.requestHandler(router::accept).listen(8001);
 

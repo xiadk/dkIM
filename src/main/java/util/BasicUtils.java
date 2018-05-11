@@ -15,6 +15,12 @@ import java.util.*;
 public class BasicUtils {
     static Random random = new Random();
 
+     public static String createRandomId() {
+        String order_id = String.valueOf(System.currentTimeMillis()) + random.nextInt(10) + random.nextInt(10);
+        return order_id;
+    }
+
+
     /**
      * 获取登录token
      *

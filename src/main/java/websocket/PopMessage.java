@@ -38,6 +38,7 @@ public class PopMessage {
                 switch (message.getInteger("type")) {
                     case 0:
 
+                        future.complete();
                         futures.add(future);
                         break;
                     case 1:
@@ -52,7 +53,7 @@ public class PopMessage {
                         break;
                 }
             }
-            CompositeFuture.all(futures).setHandler(allRes->{
+            CompositeFuture.any(futures).setHandler(allRes->{
                 if(allRes.failed()) {
                     handler.handle(Future.failedFuture(allRes.cause()));
                 } else {

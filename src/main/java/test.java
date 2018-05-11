@@ -1,3 +1,4 @@
+import bean.Ope;
 import io.vertx.core.json.JsonObject;
 
 import java.io.*;
@@ -6,8 +7,7 @@ import java.math.BigDecimal;
 public class test {
     public static void main(String[] args) {
 //        new test().count();
-        String path = "/js/jquery.min.map";
-        System.out.println(path.matches("/js/.*"));
+        System.out.println();
     }
 
     public void count(){

@@ -1,11 +1,11 @@
 package websocket;
 
 import bean.Message;
+import bean.Ope;
 import connector.RedisOperator;
-import dao.UserDao;
+import dao.GroupDao;
 import exception.AppException;
 import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.http.WebSocketFrame;
@@ -22,6 +22,7 @@ public class MessageHandler implements Handler<WebSocketFrame> {
     private PushMessage pushMessage = PushMessage.getPushMessage();
     private ServerWebSocket serverWebSocket;
     private Map<String, ServerWebSocket> serverWebSocketMap;
+    private GroupDao groupDao = GroupDao.getGroupDao();
 
     public MessageHandler(ServerWebSocket serverWebSocket, Map<String, ServerWebSocket> serverWebSocketMap) {
         this.serverWebSocket = serverWebSocket;
@@ -47,94 +48,39 @@ public class MessageHandler implements Handler<WebSocketFrame> {
                 if (uidSocket == null) {
                     serverWebSocketMap.put(uid, serverWebSocket);
                 }
-                //第一次连接fid默认-1
-                if (message.getFid() <= 0) {
-                    //拉取缓存信息
-                    popMessage.pop(Integer.parseInt(uid), messageRes -> {
-                        if (messageRes.failed()) {
-                            serverWebSocket.writeFinalTextFrame(new AppException(ResponseUtils.SERVER_FAIL, "服务器错误").getMessage());
-                        } else {
-                            List<JsonObject> list = messageRes.result();
-                            JsonObject respMessage = new JsonObject();
-                            respMessage.put("msgId", "0200").put("body", list);
-                            serverWebSocket.writeFinalTextFrame(respMessage.encode());
-                        }
-                    });
-                    /*RedisOperator.lpopall(messageKey + uid, messageRes -> {
-                        if (messageRes.failed()) {
-                            serverWebSocket.writeFinalTextFrame(new AppException(ResponseUtils.SERVER_FAIL, "服务器错误").getMessage());
-                        } else {
-                            JsonArray jsonArray = messageRes.result();
-                            JsonObject respMessage = new JsonObject();
-                            respMessage.put("msgId", "0200").put("body", jsonArray);
-                            serverWebSocket.writeFinalTextFrame(respMessage.encode());
-                        }
-                    });*/
-                } else {
-                    //给目标客户端发送消息
-                    String fid = String.valueOf(message.getFid());
-                    ServerWebSocket fidSocket = serverWebSocketMap.get(fid);
-                    pushMessage.push(message, Integer.parseInt(uid), messageRes -> {
-                        if (messageRes.failed()) {
-                            serverWebSocket.writeFinalTextFrame(messageRes.cause().getMessage());
-                        } else if (fidSocket != null) {
-                            //目标用户在线
-                            formReturnMsg(message, Integer.parseInt(uid), backMsgRes -> {
-                                if (backMsgRes.failed()) {
-                                    serverWebSocket.writeFinalTextFrame(backMsgRes.cause().getMessage());
-                                } else {
-                                    JsonArray jsonArray = new JsonArray();
-                                    jsonArray.add(backMsgRes.result().put("mid",messageRes.result()));
-                                    JsonObject respFidMessage = new JsonObject();
-                                    respFidMessage.put("msgId", "0200").put("body", jsonArray);
-                                    fidSocket.writeFinalTextFrame(respFidMessage.encode());
-
-                                    JsonObject respMessage = new JsonObject();
-                                    respMessage.put("msgId", "0200").put("body", "发送成功");
-                                    serverWebSocket.writeFinalTextFrame(respMessage.encode());
-                                }
-                            });
-                        } else {
-                            JsonObject respMessage = new JsonObject();
-                            respMessage.put("msgId", "0200").put("body", "发送成功");
-                            serverWebSocket.writeFinalTextFrame(respMessage.encode());
-                        }
-                    });
-                    /*if (fidSocket == null) {
-                        //目标用户不在线，将信息存入缓存中
-                        formReturnMsg(message, Integer.parseInt(uid), backMsgRes -> {
-                            if (backMsgRes.failed()) {
-                                serverWebSocket.writeFinalTextFrame(backMsgRes.cause().getMessage());
-                            } else {
-                                RedisOperator.lpush(messageKey + fid, backMsgRes.result(), lpushRes -> {
-                                    if (lpushRes.failed()) {
-                                        serverWebSocket.writeFinalTextFrame(new AppException(ResponseUtils.SERVER_FAIL, "服务器错误").getMessage());
-                                    } else {
-                                        JsonObject respMessage = new JsonObject();
-                                        respMessage.put("msgId", "0200").put("body", "发送成功");
-                                        serverWebSocket.writeFinalTextFrame(respMessage.encode());
+                //给目标客户端发送消息
+                if (message.getFid() > 0) {
+                    if (message.getOpe() == Ope.PERSONAL) {
+                        //发送个人消息
+                        String fid = String.valueOf(message.getFid());
+                        ServerWebSocket fidSocket = serverWebSocketMap.get(fid);
+                        sendMessage(message, uid, uid, fidSocket);
+                    } else if (message.getOpe() == Ope.GROUP) {
+                        //发送群消息
+                        //更新用户自己的消息记录
+                        pushMessage.messageInit(message, Integer.parseInt(uid), Integer.parseInt(uid), res -> {
+                            if (res.succeeded()) {
+                                groupDao.selectMembersUid(message.getFid(), membersRes -> {
+                                    List<JsonObject> members = membersRes.result();
+                                    int gid = message.getFid();
+                                    for (int i = 0, j = members.size(); i < j; i++) {
+                                        String fid = String.valueOf(members.get(i).getInteger("uid"));
+                                        //排除掉自己
+                                        if (!fid.equals(uid)) {
+                                            ServerWebSocket fidSocket = serverWebSocketMap.get(fid);
+                                            //更换位置，群发给其他成功
+                                            message.setFid(Integer.parseInt(fid));
+                                            sendMessage(message, gid + "", uid, fidSocket);
+                                        }
                                     }
-
                                 });
-                            }
-                        });
-                    } else {
-                        //目标用户在线
-                        formReturnMsg(message, Integer.parseInt(uid), backMsgRes -> {
-                            if (backMsgRes.failed()) {
-                                serverWebSocket.writeFinalTextFrame(backMsgRes.cause().getMessage());
                             } else {
-                                JsonArray jsonArray = new JsonArray();
-                                jsonArray.add(backMsgRes.result());
-                                JsonObject respFidMessage = new JsonObject();
-                                respFidMessage.put("msgId", "0200").put("body", jsonArray);
-                                fidSocket.writeFinalTextFrame(respFidMessage.encode());
-                                JsonObject respMessage = new JsonObject();
-                                respMessage.put("msgId", "0200").put("body", "发送成功");
-                                serverWebSocket.writeFinalTextFrame(respMessage.encode());
+                                System.out.println("发消息消息失败" + res.cause());
                             }
+
                         });
-                    }*/
+                    }
+
                 }
                 //连接关闭
                 serverWebSocket.closeHandler(res -> {
@@ -156,24 +102,56 @@ public class MessageHandler implements Handler<WebSocketFrame> {
     public void formReturnMsg(Message message, int uid, Handler<AsyncResult<JsonObject>> handler) {
 
         switch (message.getType()) {
-            case TEXT:
-
-                break;
             case PHOTO:
-
-                break;
+            case TEXT:
+            case GROUP_HINT:
             case ADD_FRIEND:
 
                 try {
+
                     JsonObject message1 = JsonObject.mapFrom(message);
                     message1.put("ope", message.getOpe().val).put("type", message.getType().val);
-                    popMessage.sendAddFriend(message1,uid, handler);
-                } catch (Exception e){
+                    popMessage.sendAddFriend(message1, uid, handler);
+
+                } catch (Exception e) {
                     System.out.println(e);
                 }
                 break;
             default:
                 break;
         }
+    }
+
+    public void sendMessage(Message message, String poryId, String uid, ServerWebSocket fidSocket) {
+        pushMessage.push(message, Integer.parseInt(poryId),Integer.parseInt(uid), messageRes -> {
+            if (messageRes.failed()) {
+                serverWebSocket.writeFinalTextFrame(messageRes.cause().getMessage());
+            } else if (fidSocket != null) {
+                //目标用户在线
+                formReturnMsg(message, Integer.parseInt(uid), backMsgRes -> {
+                    if (backMsgRes.failed()) {
+                        serverWebSocket.writeFinalTextFrame(backMsgRes.cause().getMessage());
+                    } else {
+                        JsonObject back = backMsgRes.result();
+                        if(message.getOpe()==Ope.GROUP) {
+                            back.put("uid",poryId);
+                        }
+                        JsonArray jsonArray = new JsonArray();
+                        jsonArray.add(back.put("mid", messageRes.result()));
+                        JsonObject respFidMessage = new JsonObject();
+                        respFidMessage.put("msgId", "0200").put("body", jsonArray);
+                        fidSocket.writeFinalTextFrame(respFidMessage.encode());
+
+                        JsonObject respMessage = new JsonObject();
+                        respMessage.put("msgId", "0200").put("body", "发送成功");
+                        serverWebSocket.writeFinalTextFrame(respMessage.encode());
+                    }
+                });
+            } else {
+                JsonObject respMessage = new JsonObject();
+                respMessage.put("msgId", "0200").put("body", "发送成功");
+                serverWebSocket.writeFinalTextFrame(respMessage.encode());
+            }
+        });
     }
 }

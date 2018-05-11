@@ -30,6 +30,8 @@ public class FriendRouter {
         router.post("/delcontact").handler(this::delContact);
         router.post("/addcontact").handler(this::addContact);
         router.get("/getcontacts").handler(this::getContacts);
+        router.get("/alias").handler(this::getAliasByFid);
+        router.get("/search").handler(this::search);
     }
 
     public void addFriend(RoutingContext context) {
@@ -135,6 +137,33 @@ public class FriendRouter {
                 context.fail(res.cause());
             } else {
                 ResponseUtils.responseSuccess(context, "contacts", res.result());
+            }
+
+        });
+    }
+
+    public void search(RoutingContext context) {
+        int uid = ((Auth) context.get("auth")).getUid();
+        String name = ParameterUtils.getStringParam(context, "name");
+        friendsService.getContactsByName(uid,name, res -> {
+            if (res.failed()) {
+                context.fail(res.cause());
+            } else {
+                ResponseUtils.responseSuccess(context, "friends", res.result());
+            }
+
+        });
+    }
+
+    public void getAliasByFid(RoutingContext context) {
+        int uid = ((Auth) context.get("auth")).getUid();
+        int fid = ParameterUtils.getIntegerParam(context,"fid");
+
+        friendsService.getAliasByFid(uid,fid, res -> {
+            if (res.failed()) {
+                context.fail(res.cause());
+            } else {
+                ResponseUtils.responseSuccess(context, "alias", res.result());
             }
 
         });
