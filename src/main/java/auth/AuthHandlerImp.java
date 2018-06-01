@@ -30,6 +30,7 @@ public class AuthHandlerImp implements AuthHandler {
         jsonArray.add(".*/css/.*");
         jsonArray.add(".*/js/.*");
         jsonArray.add(".*/audio/.*");
+        jsonArray.add("/file/.*");
     }
 
     public boolean filter_path(String path) {
@@ -75,7 +76,7 @@ public class AuthHandlerImp implements AuthHandler {
         String uri = request.uri();
         String requestParams = request.params().toString().replace("\n", "\t");
         Long currentTimeMillis = System.currentTimeMillis();
-        System.out.println("IN---url:"+uri+";method:"+method+";params:"+requestParams+";time:"+currentTimeMillis);
+//        System.out.println("IN---url:"+uri+";method:"+method+";params:"+requestParams+";time:"+currentTimeMillis);
         request_logger.info("REQUEST(uid:{} token:{} ip:{}): {} {} time:{} params:{}", uid, token, remoteAddress, method, uri, currentTimeMillis, requestParams);
     }
 

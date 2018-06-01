@@ -35,6 +35,19 @@ public class UserDao {
         });
     }
 
+    public void updateUser(User user,Handler<AsyncResult<Integer>> handler){
+        String sql="update users set name=?,sex=?,address=?,photo=? where uid=?";
+        JsonArray params = new JsonArray().add(user.getName()).add(user.getSex()).add(user.getAddress()).add(user.getPhoto()).add(user.getUid());
+        BaseDao.queryWithParams(sql,params,res->{
+            if(res.failed()){
+                handler.handle(Future.failedFuture(res.cause()));
+            }else {
+                handler.handle(Future.succeededFuture());
+            }
+        });
+
+    }
+
     public void insertUser(User user,Handler<AsyncResult<Integer>> handler){
         String sql="insert into users (name,password,phone) values(?,?,?) returning uid";
         JsonArray params = new JsonArray().add(user.getName()).add(user.getPassword()).add(user.getPhone());
@@ -51,6 +64,25 @@ public class UserDao {
             }
         });
 
+    }
+
+    public void getUserInfoById(int uid,Handler<AsyncResult<JsonObject>> handler){
+        Map<String,Object> map = new HashMap<>();
+        map.put("uid",uid);
+
+        String sql = "select * from users where uid=?";
+        JsonArray jsonArray = new JsonArray();
+        jsonArray.add(uid);
+        BaseDao.queryWithParams(sql,jsonArray,res->{
+            if (res.failed()) {
+                handler.handle(Future.failedFuture(res.cause()));
+            } else if (res.result().getRows().size() == 0){
+                handler.handle(Future.failedFuture(new AppException(ResponseUtils.REQUEST_NOT_EXIST,"用户不存在")));
+            } else {
+                List<JsonObject> list = res.result().getRows();
+                handler.handle(Future.succeededFuture(list.get(0)));
+            }
+        });
     }
 
     public void getUserByPhone(String phone, Handler<AsyncResult<JsonObject>> handler) {
@@ -106,7 +138,7 @@ public class UserDao {
     }
 
     public void findFriends(int uid, Handler<AsyncResult<List<JsonObject>>> handler) {
-        String sql = "select fid,name,photo,alias,address from friends,users where friends.fid=users.uid and friends.ope=0 and friends.uid=? order by friends.alias";
+        String sql = "select fid,name,photo,alias,address,sex from friends,users where friends.fid=users.uid and friends.ope=0 and friends.uid=? order by friends.alias";
         JsonArray params = new JsonArray();
         params.add(uid);
         BaseDao.queryWithParams(sql,params,res->{
@@ -134,5 +166,7 @@ public class UserDao {
             }
         });
     }
+
+
 
 }

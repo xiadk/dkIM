@@ -33,7 +33,7 @@ public class MessageHandler implements Handler<WebSocketFrame> {
     public void handle(WebSocketFrame webSocketFrame) {
         Message message = new JsonObject(webSocketFrame.textData()).mapTo(Message.class);
         //输出打印日志
-        System.out.println(message);
+//        System.out.println(message);
         String messageKey = "message:";
         String token = message.getToken();
 
@@ -75,7 +75,7 @@ public class MessageHandler implements Handler<WebSocketFrame> {
                                     }
                                 });
                             } else {
-                                System.out.println("发消息消息失败" + res.cause());
+//                                System.out.println("发消息消息失败" + res.cause());
                             }
 
                         });
@@ -84,7 +84,7 @@ public class MessageHandler implements Handler<WebSocketFrame> {
                 }
                 //连接关闭
                 serverWebSocket.closeHandler(res -> {
-                    System.out.println("退出:" + uid);
+//                    System.out.println("退出:" + uid);
                     serverWebSocketMap.remove(uid);
                 });
 
@@ -106,6 +106,7 @@ public class MessageHandler implements Handler<WebSocketFrame> {
             case TEXT:
             case GROUP_HINT:
             case ADD_FRIEND:
+            case FILE:
 
                 try {
 
@@ -143,13 +144,13 @@ public class MessageHandler implements Handler<WebSocketFrame> {
                         fidSocket.writeFinalTextFrame(respFidMessage.encode());
 
                         JsonObject respMessage = new JsonObject();
-                        respMessage.put("msgId", "0200").put("body", "发送成功");
+                        respMessage.put("msgId", "0201").put("body", "发送成功");
                         serverWebSocket.writeFinalTextFrame(respMessage.encode());
                     }
                 });
             } else {
                 JsonObject respMessage = new JsonObject();
-                respMessage.put("msgId", "0200").put("body", "发送成功");
+                respMessage.put("msgId", "0201").put("body", "发送成功");
                 serverWebSocket.writeFinalTextFrame(respMessage.encode());
             }
         });

@@ -12,6 +12,7 @@ public class User {
     private String address;
     private Timestamp birthday;
     private Timestamp create_time ;
+    private String photo;
     private int is_del;
 
     public int getUid() {
@@ -92,5 +93,13 @@ public class User {
 
     public void setIs_del(int is_del) {
         this.is_del = is_del;
+    }
+
+    public String getPhoto() {
+        return photo;
+    }
+
+    public void setPhoto(String photo) {
+        this.photo = photo;
     }
 }

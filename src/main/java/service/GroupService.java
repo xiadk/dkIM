@@ -9,7 +9,6 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import util.BaseDao;
 import util.BasicUtils;
 
 import java.util.ArrayList;
@@ -70,14 +69,21 @@ public class GroupService {
 
     public void delMembers(int gid, JsonArray member, Handler<AsyncResult<Void>> handler) {
         List<Future> futures = new ArrayList<>();
+        List<JsonObject> list = new ArrayList<>();
+        JsonObject jsonObject = new JsonObject();
+        for (int i = 0, j = member.size(); i < j; i++) {
+            list.add(jsonObject.clear().put("uid",Integer.parseInt(member.getString(i))));
+        }
         Future future1 = Future.future();
         groupDao.delMembers(gid, member, handler);
         futures.add(future1);
-        for(int i=0,j=futures.size();i<j;i++) {
-            Future future2 = Future.future();
-            friendsDao.deleteContact(Integer.parseInt(member.getString(i)),gid,future2);
-            futures.add(future2);
-        }
+        Future delFriendFu = Future.future();
+        friendsDao.deleteFriends(list, gid, delFriendFu);
+        futures.add(delFriendFu);
+        Future delContactFu = Future.future();
+        friendsDao.deleteContacts(list,gid,delContactFu);
+        futures.add(delContactFu);
+
         CompositeFuture.all(futures).setHandler(res -> {
             if (res.failed()) {
                 handler.handle(Future.failedFuture(res.cause()));
@@ -109,15 +115,18 @@ public class GroupService {
         });
     }
 
-    public void addGroup_members(int gid, JsonArray members, Handler<AsyncResult<Void>> handler) {
+    public void addGroup_members(int gid,String gname, JsonArray members, Handler<AsyncResult<Void>> handler) {
         List<Future> futures = new ArrayList<>();
         Future future1 = Future.future();
         groupDao.addGroup_members(gid, members, future1);
         futures.add(future1);
-        for(int i=0,j=futures.size();i<j;i++) {
+        for (int i = 0, j = members.size(); i < j; i++) {
             Future future2 = Future.future();
             friendsDao.insertContact(gid, Integer.parseInt(members.getString(i)), 1, future2);
             futures.add(future2);
+            Future future3 = Future.future();
+            friendsDao.insertFriend(Integer.parseInt(members.getString(i)), gid, gname, gid, 1, future3);
+            futures.add(future3);
         }
         CompositeFuture.all(futures).setHandler(res -> {
             if (res.failed()) {
@@ -159,13 +168,67 @@ public class GroupService {
     }
 
     public void exitGroup(int gid, int uid, Handler<AsyncResult<Void>> handler) {
+        groupDao.selectGroup(gid, groupRes -> {
+            if (groupRes.failed()) {
+                handler.handle(Future.failedFuture(groupRes.cause()));
+            } else {
+
+                Future<Void> delemberFu = Future.future();
+                Future<Void> delFriendFu = Future.future();
+                Future<Void> delContactFu = Future.future();
+                Future<Void> delGroupFu = Future.future();
+                JsonArray members = new JsonArray();
+                int owner = groupRes.result().get(0).getInteger("owner");
+                if (owner == uid) {
+                    groupDao.selectMembersUid(gid,membsersRes->{
+                        if(membsersRes.failed()) {
+                            delGroupFu.fail(membsersRes.cause());
+                        } else {
+                            List<JsonObject> list = membsersRes.result();
+                            for(int i = 0,j =list.size();i<j;i++) {
+                                members.add(""+list.get(i).getInteger("uid"));
+                            }
+                            groupDao.delMembers(gid, members, delemberFu);
+                            friendsDao.deleteContacts(list,gid,delContactFu);
+                            friendsDao.deleteFriends(list, gid, delFriendFu);
+                            groupDao.delGroup(gid, delGroupFu);
+                        }
+                    });
+                } else {
+                    delGroupFu.complete();
+                    groupDao.delMembers(gid, members.add(""+uid), delemberFu);
+                    friendsDao.deleteContact(uid, gid, delContactFu);
+                    friendsDao.deleteFriend(uid, gid, delFriendFu);
+                }
+
+
+
+
+                CompositeFuture.all(delContactFu, delemberFu, delFriendFu, delGroupFu).setHandler(res -> {
+                    if (res.failed()) {
+                        handler.handle(Future.failedFuture(res.cause()));
+                    } else {
+                        handler.handle(Future.succeededFuture());
+                    }
+                });
+            }
+        });
+
+
+    }
+
+    public void updateGroupName(int gid, int uid, String gname, Handler<AsyncResult<Void>> handler) {
         Future<Void> future = Future.future();
-        friendsDao.deleteFriend(uid, gid, future);
+        groupDao.updateGroupName(gid, gname, future);
         Future<Void> future1 = Future.future();
-        friendsDao.deleteContact(uid, gid, future1);
-        Future<Void> future2 = Future.future();
-        groupDao.delMembers(gid, new JsonArray().add(""+uid), future2);
-        CompositeFuture.all(future, future2, future1).setHandler(res -> {
+        groupDao.selectMembersUid(gid,MemberRes->{
+            if(MemberRes.failed()) {
+                future1.fail(MemberRes.cause());
+            } else {
+                friendsDao.updateGroupAlias(gname,MemberRes.result(),gid,future1);
+            }
+        });
+        CompositeFuture.all(future, future1).setHandler(res -> {
             if (res.failed()) {
                 handler.handle(Future.failedFuture(res.cause()));
             } else {
@@ -174,21 +237,10 @@ public class GroupService {
         });
     }
 
-    public void updateGroupName(int gid ,int uid,String gname,Handler<AsyncResult<Void>> handler){
-        Future<Void> future = Future.future();
-        groupDao.updateGroupName(gid,gname,future);
-        Future<Void> future1 = Future.future();
-        friendsDao.updateAlias(gname,uid,gid,future1);
-        CompositeFuture.all(future,future1).setHandler(res -> {
-            if (res.failed()) {
-                handler.handle(Future.failedFuture(res.cause()));
-            } else {
-                handler.handle(Future.succeededFuture());
-            }
-        });
+    public void selectGroupByUid(int gid, Handler<AsyncResult<List<JsonObject>>> handler) {
+
+        groupDao.selectGroupByUid(gid, handler);
     }
-
-
 
 
 }

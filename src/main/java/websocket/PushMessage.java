@@ -25,6 +25,7 @@ public class PushMessage {
             case TEXT:
             case GROUP_HINT:
             case PHOTO:
+            case FILE:
                 messageInit(message, poryId, uid, handler);
 
                 break;

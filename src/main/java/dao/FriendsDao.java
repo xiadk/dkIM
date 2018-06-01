@@ -8,6 +8,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import org.apache.commons.lang3.StringUtils;
 import util.BaseDao;
 import util.ResponseUtils;
 
@@ -74,6 +75,27 @@ public class FriendsDao {
         });
     }
 
+     public void deleteFriends(List<JsonObject> member,int gid,Handler<AsyncResult<Void>> handler){
+        StringBuilder sql = new StringBuilder("delete from friends where fid=? and uid in (");
+        JsonArray params = new JsonArray();
+        params.add(gid);
+        for(int i=0;i<member.size();i++) {
+            sql.append("?,");
+            params.add(member.get(i).getInteger("uid"));
+        }
+        sql.deleteCharAt(sql.lastIndexOf(","));
+        sql.append(")");
+
+
+        BaseDao.updateWithParams(sql.toString(),params, res->{
+            if(res.failed()) {
+                handler.handle(Future.failedFuture(res.cause()));
+            } else {
+                handler.handle(Future.succeededFuture());
+            }
+        });
+    }
+
     public void updateAlias(String alias,int uid,int fid,Handler<AsyncResult<Void>> handler){
         String sql ="update friends set alias=? where uid=? and fid=?";
         JsonArray params = new JsonArray();
@@ -86,6 +108,28 @@ public class FriendsDao {
             }
         });
     }
+
+      public void updateGroupAlias(String alias,List<JsonObject> member,int gid,Handler<AsyncResult<Void>> handler){
+        StringBuilder sql = new StringBuilder("update friends set alias=? where fid=? and uid in (");
+        JsonArray params = new JsonArray();
+        params.add(alias).add(gid);
+        for(int i=0;i<member.size();i++) {
+            sql.append("?,");
+            params.add(member.get(i).getInteger("uid"));
+        }
+        sql.deleteCharAt(sql.lastIndexOf(","));
+        sql.append(")");
+
+
+        BaseDao.updateWithParams(sql.toString(),params, res->{
+            if(res.failed()) {
+                handler.handle(Future.failedFuture(res.cause()));
+            } else {
+                handler.handle(Future.succeededFuture());
+            }
+        });
+    }
+
 
     /**
      *
@@ -113,6 +157,27 @@ public class FriendsDao {
         params.add(uid).add(fid);
         BaseDao.updateWithParams(sql,params,res->{
             if(res.failed() || res.result().getUpdated()!=1) {
+                handler.handle(Future.failedFuture(res.cause()));
+            } else {
+                handler.handle(Future.succeededFuture());
+            }
+        });
+    }
+
+    public void deleteContacts(List<JsonObject> member,int gid,Handler<AsyncResult<Void>> handler){
+        StringBuilder sql = new StringBuilder("delete from contacts where fid=? and uid in (");
+        JsonArray params = new JsonArray();
+        params.add(gid);
+        for(int i=0;i<member.size();i++) {
+            sql.append("?,");
+            params.add(member.get(i).getInteger("uid"));
+        }
+        sql.deleteCharAt(sql.lastIndexOf(","));
+        sql.append(")");
+
+
+        BaseDao.updateWithParams(sql.toString(),params, res->{
+            if(res.failed()) {
                 handler.handle(Future.failedFuture(res.cause()));
             } else {
                 handler.handle(Future.succeededFuture());
@@ -187,9 +252,15 @@ public class FriendsDao {
     }
 
     public void selectFriendByName(int uid,String name,Handler<AsyncResult<List<JsonObject>>> handler){
-        String sql="select fid,alias,ope from friends where uid=? and alias like ?";
         JsonArray params = new JsonArray();
-        params.add(uid).add("%"+name+"%");
+        String sql = "";
+        if(StringUtils.isBlank(name)) {
+            sql="select fid,alias,ope from friends where uid=? order by alias";
+            params.add(uid);
+        } else {
+            sql = "select fid,alias,ope from friends where uid=? and alias like ? order by alias";
+            params.add(uid).add("%" + name + "%");
+        }
         BaseDao.queryWithParams(sql,params,res->{
             if(res.failed()) {
                 handler.handle(Future.failedFuture(res.cause()));

@@ -2,12 +2,14 @@ package service;
 
 import dao.FriendsDao;
 import dao.GroupDao;
+import dao.MessageDao;
 import dao.UserDao;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +21,7 @@ public class FriendsService {
     private FriendsDao friendsDao = FriendsDao.getFriendsDao();
     private UserDao userDao = UserDao.getUserDao();
     private GroupDao groupDao = GroupDao.getGroupDao();
+    private MessageDao messageDao = MessageDao.getMessageDao();
 
     public static FriendsService getFriendsService() {
         return service;
@@ -61,7 +64,11 @@ public class FriendsService {
         friendsDao.deleteFriend(uid, fid, future1);
         Future<Void> future2 = Future.future();
         friendsDao.deleteFriend(fid, uid, future2);
-        CompositeFuture.all(future1, future2).setHandler(res -> {
+        Future<Void> future3 = Future.future();
+        messageDao.delMessage(uid,fid,future3);
+        Future<Void> future4 = Future.future();
+        messageDao.delMessage(fid,uid,future4);
+        CompositeFuture.all(future1, future2,future3,future4).setHandler(res -> {
             if (res.failed()) {
                 handler.handle(Future.failedFuture(res.cause()));
             } else {

@@ -21,16 +21,16 @@ public class SpaceDao {
         return spaceDao;
     }
 
-    public void addSpace(int uid,int type,String content,Handler<AsyncResult<Void>> handler) {
-        String sql="insert into space (uid,content,type)values(?,?,?)";
+    public void addSpace(int uid,int type,String content,Handler<AsyncResult<Integer>> handler) {
+        String sql="insert into space (uid,content,type)values(?,?,?) returning id";
 
          JsonArray params = new JsonArray();
          params.add(uid).add(content).add(type);
-         BaseDao.updateWithParams(sql,params,res->{
-             if(res.failed()){
+         BaseDao.queryWithParams(sql,params,res->{
+             if(res.failed() || res.result().getRows().size()==0){
                 handler.handle(Future.failedFuture(res.cause()));
             }else {
-                 handler.handle(Future.succeededFuture());
+                 handler.handle(Future.succeededFuture(res.result().getRows().get(0).getInteger("id")));
             }
          });
     }

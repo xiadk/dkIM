@@ -140,4 +140,33 @@ public class GroupDao {
         });
     }
 
+     public void selectGroupByUid(int uid, Handler<AsyncResult<List<JsonObject>>> handler){
+
+        String sql = "select DISTINCT(groups.gid),groups.gname,groups.photo from groups left join groups_members on groups.gid=groups_members.gid where  owner=? or uid=?";
+
+        JsonArray params = new JsonArray();
+        params.add(uid).add(uid);
+        BaseDao.queryWithParams(sql,params, res->{
+            if(res.failed()) {
+                handler.handle(Future.failedFuture(res.cause()));
+            } else {
+                handler.handle(Future.succeededFuture(res.result().getRows()));
+            }
+        });
+    }
+
+    public void delGroup(int gid,Handler<AsyncResult<Void>> handler){
+
+        StringBuilder sql = new StringBuilder("delete from groups where gid=? ");
+        JsonArray params = new JsonArray();
+        params.add(gid);
+        BaseDao.updateWithParams(sql.toString(),params, res->{
+            if(res.failed()) {
+                handler.handle(Future.failedFuture(res.cause()));
+            } else {
+                handler.handle(Future.succeededFuture());
+            }
+        });
+    }
+
 }

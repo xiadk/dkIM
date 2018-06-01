@@ -29,6 +29,8 @@ public class UserRouter {
     public void init(){
         router.post("/register").handler(this::register);
         router.get("/").handler(this::getUser);
+        router.get("/userInfo").handler(this::getUserInfo);
+        router.post("/updateInfo").handler(this::updateInfo);
     }
 
     public void register(RoutingContext context){
@@ -62,6 +64,39 @@ public class UserRouter {
                 context.fail(res.cause());
             } else {
                 ResponseUtils.responseSuccess(context,res.result());
+            }
+        });
+    }
+
+    public void getUserInfo(RoutingContext context){
+        int uid = ((Auth) context.get("auth")).getUid();
+        userService.getUserInfoById(uid,res->{
+            if(res.failed()) {
+                context.fail(res.cause());
+            } else {
+                ResponseUtils.responseSuccess(context,res.result());
+            }
+        });
+    }
+
+    public void updateInfo(RoutingContext context){
+        int uid = ((Auth) context.get("auth")).getUid();
+        String name = ParameterUtils.getStringParam(context,"name");
+        String address = ParameterUtils.getStringParam(context,"address");
+        String sex = ParameterUtils.getStringParam(context,"sex");
+        String photo = ParameterUtils.getStringParam(context,"photo");
+
+        User user = new User();
+        user.setName(name);
+        user.setAddress(address);
+        user.setPhone(sex);
+        user.setPhoto(photo);
+        user.setUid(uid);
+        userService.updateUser(user,res->{
+            if(res.failed()) {
+                context.fail(res.cause());
+            } else {
+                ResponseUtils.responseSuccess(context);
             }
         });
     }

@@ -2,6 +2,7 @@ package route;
 
 import bean.Auth;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonArray;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import service.MessageService;
@@ -47,8 +48,9 @@ public class SpaceRouter {
     public void addSpace(RoutingContext context){
         int uid = ((Auth) context.get("auth")).getUid();
         int type = ParameterUtils.getIntegerParam(context,"type");
+        JsonArray images = new JsonArray(context.request().getParam("images"));
         String  content = ParameterUtils.getStringParam(context,"content");
-        spaceService.addSpace(uid,type,content,res->{
+        spaceService.addSpace(uid,type,content,images,res->{
             if(res.failed()) {
                 context.fail(res.cause());
             } else {

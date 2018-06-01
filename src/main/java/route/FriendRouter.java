@@ -144,7 +144,7 @@ public class FriendRouter {
 
     public void search(RoutingContext context) {
         int uid = ((Auth) context.get("auth")).getUid();
-        String name = ParameterUtils.getStringParam(context, "name");
+        String name = context.request().getParam("name");
         friendsService.getContactsByName(uid,name, res -> {
             if (res.failed()) {
                 context.fail(res.cause());

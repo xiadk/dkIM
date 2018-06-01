@@ -1,13 +1,11 @@
 package service;
 
-import dao.FriendsDao;
-import dao.GroupDao;
-import dao.SpaceDao;
-import dao.UserDao;
+import dao.*;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import util.TimeUtils;
 
@@ -22,14 +20,40 @@ public class SpaceService {
     private static FriendsDao friendsDao = FriendsDao.getFriendsDao();
     private static UserDao userDao = UserDao.getUserDao();
     private static SpaceDao spaceDao = SpaceDao.getSpaceDao();
+    private static FileDao fileDao = FileDao.getFileDao();
 
     public static SpaceService getGroupService() {
         return groupService;
     }
 
-    public void addSpace(int uid, int type, String content, Handler<AsyncResult<Void>> handler) {
+    public void addSpace(int uid, int type, String content, JsonArray images, Handler<AsyncResult<Void>> handler) {
 
-        spaceDao.addSpace(uid, type, content, handler);
+
+        spaceDao.addSpace(uid, type, content, res -> {
+            if (res.failed()) {
+                handler.handle(Future.failedFuture(res.cause()));
+            } else {
+                //图片说说
+                if (type == 1) {
+                    List<Future> futures = new ArrayList<>();
+                    for (int i = 0, j = images.size(); i < j; i++) {
+                        Future addFileFu = Future.future();
+                        fileDao.addFile(images.getString(i), res.result(), addFileFu);
+                        futures.add(addFileFu);
+                    }
+                    CompositeFuture.all(futures).setHandler(allRes -> {
+                        if (allRes.failed()) {
+                            handler.handle(Future.failedFuture(allRes.cause()));
+                        } else {
+                            handler.handle(Future.succeededFuture());
+                        }
+                    });
+
+                }
+
+            }
+        });
+
 
     }
 
@@ -81,6 +105,8 @@ public class SpaceService {
                             future.complete();
                         }
                     });
+                    futures.add(future);
+
                     //获取评论
                     Future future2 = Future.future();
                     spaceDao.getComment(sid, commentsRes -> {
@@ -94,8 +120,25 @@ public class SpaceService {
                             future2.complete();
                         }
                     });
-                    futures.add(future);
                     futures.add(future2);
+
+                    int type = js.getInteger("type");
+                    if (type == 1) {
+                        Future future3 = Future.future();
+                        fileDao.getFiles(sid, filesRes -> {
+                            if (filesRes.failed()) {
+                                future3.fail(filesRes.cause());
+                            } else if (filesRes.result().size() > 0) {
+                                js.put("images", filesRes.result());
+                                future3.complete();
+                            } else {
+                                js.put("images", "");
+                                future3.complete();
+                            }
+                        });
+                        futures.add(future3);
+                    }
+
 
                 }
                 CompositeFuture.all(futures).setHandler(allRes -> {
@@ -154,7 +197,23 @@ public class SpaceService {
                     });
                     futures.add(future);
                     futures.add(future2);
-
+                    //获取图片
+                    int type = js.getInteger("type");
+                    if (type == 1) {
+                        Future future3 = Future.future();
+                        fileDao.getFiles(sid, filesRes -> {
+                            if (filesRes.failed()) {
+                                future3.fail(filesRes.cause());
+                            } else if (filesRes.result().size() > 0) {
+                                js.put("images", filesRes.result());
+                                future3.complete();
+                            } else {
+                                js.put("images", "");
+                                future3.complete();
+                            }
+                        });
+                        futures.add(future3);
+                    }
                 }
                 CompositeFuture.all(futures).setHandler(allRes -> {
                     if (allRes.failed()) {
@@ -173,11 +232,32 @@ public class SpaceService {
                 handler.handle(Future.failedFuture(res.cause()));
             } else {
                 List<JsonObject> list = res.result();
+                List<Future> futures = new ArrayList<>();
                 for (int i = 0, j = list.size(); i < j; i++) {
-                    Date oldTime = new Date(TimeUtils.StringToDateTime(list.get(i).getString("create_time")).getTime());
-                    list.get(i).put("create_time", TimeUtils.timestamp_beforTime(oldTime, new Date()));
+                    JsonObject message = list.get(i);
+                    Date oldTime = new Date(TimeUtils.StringToDateTime(message.getString("create_time")).getTime());
+                    message.put("create_time", TimeUtils.timestamp_beforTime(oldTime, new Date()));
+                    message.put("image", "");
+                    if (list.get(i).getInteger("stp") == 1) {
+                        Future fileFu = Future.future();
+                        fileDao.getFiles(list.get(i).getInteger("sid"), fileRes -> {
+                            if (fileRes.failed() || fileRes.result().size() == 0) {
+                                fileFu.fail(fileRes.cause());
+                            } else {
+                                message.put("image", fileRes.result().get(0).getString("url"));
+                                fileFu.complete();
+                            }
+                        });
+                        futures.add(fileFu);
+                    }
                 }
-                handler.handle(Future.succeededFuture(list));
+                CompositeFuture.all(futures).setHandler(allRes -> {
+                    if (allRes.failed()) {
+                        handler.handle(Future.failedFuture(allRes.cause()));
+                    } else {
+                        handler.handle(Future.succeededFuture(list));
+                    }
+                });
             }
         });
     }

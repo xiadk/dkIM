@@ -6,8 +6,7 @@ import java.math.BigDecimal;
 
 public class test {
     public static void main(String[] args) {
-//        new test().count();
-        System.out.println();
+
     }
 
     public void count(){
